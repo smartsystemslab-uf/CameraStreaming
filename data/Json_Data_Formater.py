@@ -11,6 +11,7 @@ username = 'username'    # SSH username
 password = 'password'    # SSH password
 command = 'command'    # Command to execute
 c_file = "config_file"    #path to JSON config_file
+server_ip = 'serveur_ip'  #serveur ip addresse
 loop_time = 1800      #time between each update in seconde
 # -------------------- Configuration --------------------
 
@@ -42,11 +43,11 @@ def execute_command_on_multiple_ips(ips, username, password, command, config_fil
                 "deviceInfo": {
                     "con_mac_addr": output.strip(),
                     "last_update": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "local_ip_addr": "192.168.1.3",
+                    "local_ip_addr": ip,
                     "mac_addr": "B8:27:EB:3C:6B:0A"
                 },
                 "last_update": datetime.datetime(2021, 10, 17, 9, 37, 54).strftime("%Y-%m-%d %H:%M:%S"),
-                "serverip": "192.168.1.9",
+                "serverip": server_ip,
                 "serverport": 9434
             }
             formatted_data.append(formatted_item)
