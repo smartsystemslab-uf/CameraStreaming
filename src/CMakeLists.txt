@@ -33,7 +33,6 @@ add_executable(${PROJECT_NAME}
     queue.h
     config.h
     showmayimages.h
-    stitchingimg.h
 )
 
 include_directories(".")

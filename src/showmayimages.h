@@ -95,8 +95,8 @@ inline void PutLabelOnImg(cv::Mat& im,
 {
 
     cv::Size text = cv::getTextSize(label, fontface, scale, thickness, &baseline);
-    cv::rectangle(im, pts + cv::Point(0, baseline), pts + cv::Point(text.width, -text.height), txtColor, CV_FILLED);
-    cv::putText(im, label, pts, fontface, scale, bgColor, thickness, CV_AA);
+    cv::rectangle(im, pts + cv::Point(0, baseline), pts + cv::Point(text.width, -text.height), txtColor, cv::FILLED);
+    cv::putText(im, label, pts, fontface, scale, bgColor, thickness, cv::LINE_AA);
 }
 
 
@@ -198,7 +198,7 @@ public:
                     GetCurrentFormattedDateTime(/*std::string fmt =*/ "-%Y%m%d%H-%M-%S")+".avi";
             std::cout << "Current videos file (" << i << "): " << currf << std::endl;
             vws.push_back(cv::VideoWriter(currf,
-                                          CV_FOURCC('M','J','P','G'),
+                                          cv::VideoWriter::fourcc('M','J','P','G'),
                                           10, cv::Size(this->W,this->H)));
         }
     }
@@ -264,7 +264,7 @@ public:
                             1.0, // Scale. 2.0 = 2x bigger
                             cv::Scalar(0,0,255), // BGR Color
                             1, // Line Thickness (Optional)
-                            CV_AA); // Anti-alias (Optional)
+                            cv::LINE_AA); // Anti-alias (Optional)
 
                 PutLabelOnImg(img, GetCurrentFormattedDateTime(), cv::Point(50, img.rows - 50));
                 if(!filenames.empty())

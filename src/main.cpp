@@ -26,7 +26,6 @@ extern "C" {
 #include "queue.h"
 #include "config.h"
 #include "showmayimages.h"
-#include "stitchingimg.h"
 
 
 // Stitching with OpenPano

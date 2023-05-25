@@ -187,5 +187,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-
+# Build directory
+build/ 
 # End of https://www.gitignore.io/api/c,qt,c++,cmake,linux,windows,qtcreator
