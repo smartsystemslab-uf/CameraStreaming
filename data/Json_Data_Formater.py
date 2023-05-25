@@ -6,7 +6,7 @@ import json
 
 # -------------------- Configuration --------------------
 #                  Cam-1            Cam-2           Cam-3         Cam-4           Cam-5           Cam-6         Cam-7           Cam-8           Cam-9
-ip_addresses = [""ip1", "ip2", "ip3", "ip4", "ip5", "ip6", "ip7", "ip8", "ip9""] #ip address
+ip_addresses = [" "ip1", "ip2", "ip3", "ip4", "ip5", "ip6", "ip7", "ip8", "ip9" "] #ip address
 username = 'username'    # SSH username
 password = 'password'    # SSH password
 command = 'command'    # Command to execute
@@ -62,8 +62,6 @@ def execute_command_on_multiple_ips(ips, username, password, command, config_fil
 
     with open(config_file, "w") as file:
         json.dump(json_data, file, indent=4)
-
-    print("Les données ont été enregistrées dans le fichier 'data.json'.")
 
 
 #while True:
