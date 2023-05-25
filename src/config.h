@@ -8,8 +8,8 @@
 using json = nlohmann::json;
 
 // define default capacity of the queue
-#define INPUT_FILE "/home/erman/immersion/IpDisco-Prj/ip_disco_server/config/config_file2.json"
-#define OUTPUT_FILE "/home/erman/immersion/IpDisco-Prj/ip_disco_server/config/pretty_file.json"
+#define INPUT_FILE "/home/alexyp/Documents/stitching/CameraStreaming/data/config_file.json"
+#define OUTPUT_FILE "/home/alexyp/Documents/stitching/CameraStreaming/data/pretty_file.json"
 
 class jsonconfig
 {
