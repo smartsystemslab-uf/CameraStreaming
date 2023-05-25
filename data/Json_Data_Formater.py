@@ -6,11 +6,11 @@ import json
 
 # -------------------- Configuration --------------------
 #                  Cam-1            Cam-2           Cam-3         Cam-4           Cam-5           Cam-6         Cam-7           Cam-8           Cam-9
-ip_addresses = ["192.168.1.8", "192.168.1.15", "192.168.1.6", "192.168.1.12", "192.168.1.5", "192.168.1.4", "192.168.1.2", "192.168.1.11", "192.168.1.7"] #ip address
-username = 'erman'    # SSH username
-password = 'immersion!@#$'    # SSH password
-command = 'cat /home/erman/Script/Data.txt'    # Command to execute
-c_file = "/home/alexyp/Documents/stitching/CameraStreaming/data/config_file.json"    #path to JSON config_file
+ip_addresses = [""ip1", "ip2", "ip3", "ip4", "ip5", "ip6", "ip7", "ip8", "ip9""] #ip address
+username = 'username'    # SSH username
+password = 'password'    # SSH password
+command = 'command'    # Command to execute
+c_file = "config_file"    #path to JSON config_file
 loop_time = 1800      #time between each update in seconde
 # -------------------- Configuration --------------------
 
