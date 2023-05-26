@@ -11,10 +11,6 @@
 #include <memory>
 #include <iostream>
 
-// C std library
-//#include <pthread.h>
-//#include <signal.h>
-
 // FFmpeg
 extern "C" {
 #include <libavformat/avformat.h>
@@ -36,7 +32,7 @@ using namespace std;
 
 
 // Constants
-const int NUM_THREADS = 2;
+const int NUM_THREADS = 9;
 const std::string RTSP_ADDR = "rtsp://192.168.1.9:554/test";
 
 typedef struct VideoState {
@@ -92,7 +88,6 @@ int main(int argc, char* argv[])
     jsonconfig jconf;
     jconf.load_json();
 
-    //std::string _input_f = "rtsp://192.168.1.9:554/test";
     std::vector<std::string> input_files;
     std::vector<std::string> output_videos;
 
@@ -110,7 +105,6 @@ int main(int argc, char* argv[])
 
     int rc, i;
     size_t nbImg = 0; int mWidth = 0, mHeigh = 0;
-    //VideoState *vss[NUM_THREADS];
 	
 	std::shared_ptr<VideoState> vss[NUM_THREADS];
     std::thread threads[NUM_THREADS];
@@ -141,18 +135,8 @@ int main(int argc, char* argv[])
         if(vs->vstrm->codecpar->height > mHeigh) mHeigh = vs->vstrm->codecpar->height;
         std::cout << "output: " << vs->dst_width << 'x' << vs->dst_height << ',' << av_get_pix_fmt_name(vs->dst_pix_fmt) << std::endl;
 		
-		threads[i] = std::thread(m_thread_void_recorder, videoStateObjects[i]);
+		threads[i] = std::thread(m_thread_void_recorder, vss[i]);
     }
-
-    //pthread_t thr[NUM_THREADS];
-    /* create threads */
- /*    for (i = 0; i < NUM_THREADS; ++i) {
-        if ((rc = pthread_create(&thr[i], nullptr, m_thread_void_recorder, (void*)vss[i] ))) {
-            fprintf(stderr, "error: pthread_create, rc: %d\n", rc);
-            return EXIT_FAILURE;
-        }
-		threads[i] = std::thread(m_thread_void_recorder, videoStateObjects[i]);
-    } */
 
     std::cout << "NbImage: " << nbImg << ", Final size per image: " << mWidth << "x" << mHeigh << std::endl;
     CanvasMnger mCMnger(nbImg, mWidth, mHeigh, 1, output_videos, false);
@@ -200,22 +184,6 @@ int main(int argc, char* argv[])
 
     cv::destroyAllWindows();
 
-
-    /* Kill all threads */
-    // for (i = 0; i < NUM_THREADS; ++i) {
-        // pthread_kill( thr[i], SIGUSR1);
-    // }
-
-
-    // /* block until all threads complete */
-    // for (i = 0; i < NUM_THREADS; ++i) {
-        // pthread_join(thr[i], nullptr);
-
-        // //allocate frame buffer for output
-        // avcodec_close(vss[i]->vstrm->codec);
-        // avformat_close_input(&vss[i]->inctx);
-    // }
-	
 	// Join threads
     for (int i = 0; i < NUM_THREADS; i++) {
         if (threads[i].joinable()) {
