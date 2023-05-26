@@ -6,9 +6,14 @@
 // C++ std library
 #include <iostream>
 #include <vector>
+#include <thread>
+#include <mutex>
+#include <memory>
+#include <iostream>
+
 // C std library
-#include <pthread.h>
-#include <signal.h>
+//#include <pthread.h>
+//#include <signal.h>
 
 // FFmpeg
 extern "C" {
@@ -27,25 +32,12 @@ extern "C" {
 #include "config.h"
 #include "showmayimages.h"
 
-
-// Stitching with OpenPano
-//#define _USE_MATH_DEFINES
-//#include <cmath>
-//#include "common/common.hh"
-//#ifdef DISABLE_JPEG
-//#define IMGFILE(x) #x ".png"
-//#else
-//#define IMGFILE(x) #x ".jpg"
-//#endif
-
 using namespace std;
 
-////#define RUN_STITCHING_
-//#ifdef RUN_STITCHING_
-//#define NUM_THREADS 1
-//#else
-#define NUM_THREADS 9
-//#endif
+
+// Constants
+const int NUM_THREADS = 2;
+const std::string RTSP_ADDR = "rtsp://192.168.1.9:554/test";
 
 typedef struct VideoState {
     int id;
@@ -66,18 +58,19 @@ int record_images(int id, AVFormatContext *inctx, const AVPixelFormat dst_pix_fm
                   const int dst_width, const int dst_height, const int vstrm_idx,
                   SwsContext *swsctx);
 
-void* m_thread_void_recorder(void* arg){
-    VideoState* vs = (VideoState*)arg;
+void m_thread_void_recorder(std::shared_ptr<VideoState> vs){
+    // VideoState* vs = (VideoState*)arg;
     int ret = record_images(vs->id, vs->inctx, vs->dst_pix_fmt, vs->dst_width,
                             vs->dst_height, vs->vstrm_idx, vs->swsctx);
-    if(ret < 0)
-        ret = record_images(vs->id, vs->inctx, vs->dst_pix_fmt, vs->dst_width,
-                            vs->dst_height, vs->vstrm_idx, vs->swsctx);
+    
+	if (ret < 0) {
+        std::cerr << "Failed to record images" << std::endl;
+    }
     pthread_exit(&ret);
 }
 
 // Create and initialize a videoState object from file.
-VideoState* InitVideoStateObject(const char* infile, int id);
+std::shared_ptr<VideoState> InitVideoStateObject(const char* infile, int id);
 
 std::vector<MQueue<cv::Mat>> mQueueList(NUM_THREADS);
 
@@ -90,76 +83,6 @@ std::vector<MQueue<cv::Mat>> mQueueList(NUM_THREADS);
     write_rgb(IMGFILE(out_hum_crop), resPano);\
 }
 
-#include <experimental/filesystem>
-namespace filesys = std::experimental::filesystem;
-/** Get the list of all files in given directory and its sub directories.
- *
- * Arguments
- * 	dirPath : Path of directory to be traversed
- * 	dirSkipList : List of folder names to be skipped
- *
- * Returns:
- * 	vector containing paths of all the files in given directory and its sub directories
- *
- */
-std::vector<string>
-getAllFilesInDir(const std::string &dirPath, const std::vector<std::string> dirSkipList = {});
-
-
-/** Get the list of sub-directory names in given directory.
- *
- * Arguments
- * 	dirPath : Path of directory to be traversed
- * 	dirSkipList : List of folder names to be skipped
- *
- * Returns:
- * 	vector containing paths of all sub directories in a given directory
- *
- */
-std::vector<string>
-getDirPathInDir(const std::string &dirPath, const std::vector<std::string> dirSkipList = {});
-
-
-///     /media/sf_Data/data_stitching/Airplanes/Input
-std::vector<std::vector<std::string>> readAirplaneImages(std::string folder_dir){
-
-    // List of folder per cameras
-    std::vector<std::string> camfolders = getDirPathInDir(folder_dir/*, std::vector<std::string>{"00002"}*/);
-
-    // Matrix of all images Paths. Each row per cameras.
-    std::vector<std::vector<std::string>> imagePaths;
-
-    for (const auto & entry : camfolders){
-        std::cout << entry << std::endl;
-        std::vector<std::string> vec = getAllFilesInDir(entry);
-        imagePaths.push_back(vec);
-    }
-
-    for(unsigned i=0; i<imagePaths.size(); ++i){
-        std::cout << i << " - Total #file: " << imagePaths[i].size() << std::endl;
-    }
-
-    return imagePaths;
-}
-
-///     /media/sf_Data/data_stitching/SmartSysLab
-std::vector<std::vector<std::string>> readSmartLabImages(std::string folder_dir){
-
-    // Matrix of all images Paths. Each row per cameras.
-    std::vector<std::vector<std::string>> imagePaths;
-
-    std::vector<std::string> vec = getAllFilesInDir(folder_dir);
-    for (const auto & entry : vec){
-        std::cout << entry << std::endl;
-    }
-
-    imagePaths.push_back(vec);
-    for(unsigned i=0; i<imagePaths.size(); ++i){
-        std::cout << i << " - Total #file: " << imagePaths[i].size() << std::endl;
-    }
-
-    return imagePaths;
-}
 
 int main(int argc, char* argv[])
 {
@@ -169,13 +92,13 @@ int main(int argc, char* argv[])
     jsonconfig jconf;
     jconf.load_json();
 
-    std::string _input_f = "rtsp://192.168.1.9:554/test"; //"rtsp://admin:SSL_pass2021@192.168.1.10/MediaInput/h264"; //
+    //std::string _input_f = "rtsp://192.168.1.9:554/test";
     std::vector<std::string> input_files;
     std::vector<std::string> output_videos;
 
     for (auto &elt: jconf.js["clientdata"]){
         std::string mac_addrr = elt["deviceInfo"]["con_mac_addr"].get<std::string>();
-        input_files.push_back(_input_f+mac_addrr);
+        input_files.push_back(RTSP_ADDR+mac_addrr);
         output_videos.push_back(mac_addrr);
     }
 
@@ -187,10 +110,15 @@ int main(int argc, char* argv[])
 
     int rc, i;
     size_t nbImg = 0; int mWidth = 0, mHeigh = 0;
-    VideoState *vss[NUM_THREADS];
+    //VideoState *vss[NUM_THREADS];
+	
+	std::shared_ptr<VideoState> vss[NUM_THREADS];
+    std::thread threads[NUM_THREADS];
+	
+	
     for(i = 0; i<NUM_THREADS; i++, nbImg++){
 
-        VideoState *vs = InitVideoStateObject(input_files[i].c_str(), i);
+        std::shared_ptr<VideoState> vs = InitVideoStateObject(input_files[i].c_str(), i);
         if(vs->result < 0){
             std::cout << "Could not open file: " << input_files[i] << std::endl;
             return -1;
@@ -212,16 +140,19 @@ int main(int argc, char* argv[])
         if(vs->vstrm->codecpar->width > mWidth) mWidth = vs->vstrm->codecpar->width;
         if(vs->vstrm->codecpar->height > mHeigh) mHeigh = vs->vstrm->codecpar->height;
         std::cout << "output: " << vs->dst_width << 'x' << vs->dst_height << ',' << av_get_pix_fmt_name(vs->dst_pix_fmt) << std::endl;
+		
+		threads[i] = std::thread(m_thread_void_recorder, videoStateObjects[i]);
     }
 
-    pthread_t thr[NUM_THREADS];
+    //pthread_t thr[NUM_THREADS];
     /* create threads */
-    for (i = 0; i < NUM_THREADS; ++i) {
+ /*    for (i = 0; i < NUM_THREADS; ++i) {
         if ((rc = pthread_create(&thr[i], nullptr, m_thread_void_recorder, (void*)vss[i] ))) {
             fprintf(stderr, "error: pthread_create, rc: %d\n", rc);
             return EXIT_FAILURE;
         }
-    }
+		threads[i] = std::thread(m_thread_void_recorder, videoStateObjects[i]);
+    } */
 
     std::cout << "NbImage: " << nbImg << ", Final size per image: " << mWidth << "x" << mHeigh << std::endl;
     CanvasMnger mCMnger(nbImg, mWidth, mHeigh, 1, output_videos, false);
@@ -271,19 +202,30 @@ int main(int argc, char* argv[])
 
 
     /* Kill all threads */
-    for (i = 0; i < NUM_THREADS; ++i) {
-        pthread_kill( thr[i], SIGUSR1);
-    }
+    // for (i = 0; i < NUM_THREADS; ++i) {
+        // pthread_kill( thr[i], SIGUSR1);
+    // }
 
 
-    /* block until all threads complete */
-    for (i = 0; i < NUM_THREADS; ++i) {
-        pthread_join(thr[i], nullptr);
+    // /* block until all threads complete */
+    // for (i = 0; i < NUM_THREADS; ++i) {
+        // pthread_join(thr[i], nullptr);
 
-        // allocate frame buffer for output
+        // //allocate frame buffer for output
+        // avcodec_close(vss[i]->vstrm->codec);
+        // avformat_close_input(&vss[i]->inctx);
+    // }
+	
+	// Join threads
+    for (int i = 0; i < NUM_THREADS; i++) {
+        if (threads[i].joinable()) {
+            threads[i].join();
+        }
+		// allocate frame buffer for output
         avcodec_close(vss[i]->vstrm->codec);
         avformat_close_input(&vss[i]->inctx);
     }
+
 
     avformat_network_deinit();
     return 0;
@@ -363,11 +305,13 @@ next_packet:
     return 0;
 }
 
-VideoState* InitVideoStateObject(const char* infile, int id){
+std::shared_ptr<VideoState> InitVideoStateObject(const char* infile, int id){
 
-    VideoState *vs = (VideoState*)malloc(sizeof(VideoState));
+    //VideoState *vs = (VideoState*)malloc(sizeof(VideoState));
+	auto vs = std::make_shared<VideoState>();
     vs->id = id;
-    // open input file context
+    
+	// open input file context
     AVFormatContext* inctx = nullptr;
     int ret;
     ret = avformat_open_input(&inctx, infile, nullptr, nullptr);
@@ -427,87 +371,4 @@ VideoState* InitVideoStateObject(const char* infile, int id){
 
     return vs;
 }
-
-std::vector<std::string>
-getAllFilesInDir(const std::string &dirPath, const std::vector<std::string> dirSkipList)
-{
-
-    // Create a vector of string
-    std::vector<std::string> listOfFiles;
-    try {
-        // Check if given path exists and points to a directory
-        if (filesys::exists(dirPath) && filesys::is_directory(dirPath))
-        {
-            // Create a Recursive Directory Iterator object and points to the starting of directory
-            filesys::recursive_directory_iterator iter(dirPath);
-
-            // Create a Recursive Directory Iterator object pointing to end.
-            filesys::recursive_directory_iterator end;
-
-            // Iterate till end
-            while (iter != end)
-            {
-                // Check if current entry is a directory and if exists in skip list
-                if (filesys::is_directory(iter->path()) &&
-                        (std::find(dirSkipList.begin(), dirSkipList.end(), iter->path().filename()) != dirSkipList.end()))
-                {
-                    // Skip the iteration of current directory pointed by iterator
-#ifdef USING_BOOST
-                    // Boost Fileystsem  API to skip current directory iteration
-                    iter.no_push();
-#else
-                    // c++17 Filesystem API to skip current directory iteration
-                    iter.disable_recursion_pending();
-#endif
-                }
-                else
-                {
-                    // Add the name in vector
-                    listOfFiles.push_back(iter->path().string());
-                }
-
-                error_code ec;
-                // Increment the iterator to point to next entry in recursive iteration
-                iter.increment(ec);
-                if (ec) {
-                    std::cerr << "Error While Accessing : " << iter->path().string() << " :: " << ec.message() << '\n';
-                }
-            }
-        }
-    }
-    catch (std::system_error & e)
-    {
-        std::cerr << "Exception :: " << e.what();
-    }
-    return listOfFiles;
-}
-
-std::vector<std::string>
-getDirPathInDir(const std::string &dirPath, const std::vector<std::string> dirSkipList)
-{
-
-    // Create a vector of string
-    std::vector<std::string> listOfDirnames;
-    try {
-        // Check if given path exists and points to a directory
-        if (filesys::exists(dirPath) && filesys::is_directory(dirPath))
-        {
-            for (const auto & entry : filesys::directory_iterator(dirPath)){
-                // Check if current entry is a directory and if exists in skip list
-                if (filesys::is_directory(entry.path()) &&
-                        (std::find(dirSkipList.begin(), dirSkipList.end(), entry.path().filename())
-                         == dirSkipList.end()))
-                {
-                    listOfDirnames.push_back(entry.path().string());
-                }
-            }
-        }
-    }
-    catch (std::system_error & e)
-    {
-        std::cerr << "Exception :: " << e.what();
-    }
-    return listOfDirnames;
-}
-
 
