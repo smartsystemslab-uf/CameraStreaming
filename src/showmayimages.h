@@ -273,7 +273,7 @@ public:
                 // Set the image ROI to display the current image
                 // Resize the input image and copy the it to the Single Big Image
                 cv::Rect ROI(pos_x, pos_y, img.cols*sw, img.rows*sh);
-                cv::Mat temp; resize(img,temp, cv::Size(ROI.width, ROI.height));
+                cv::Mat temp; resize(img,temp, cv::Size(ROI.width, ROI.height), cv::INTER_CUBIC);
                 temp.copyTo(canvasImage2(ROI));
                 pos_x += (W*sw + 2*sMarginH);
             }
@@ -372,7 +372,7 @@ cv::Mat ShowManyImages(std::vector<cv::Mat> imgs) {
         // Set the image ROI to display the current image
         // Resize the input image and copy the it to the Single Big Image
         cv::Rect ROI(m, n, (int)( x/scale ), (int)( y/scale ));
-        cv::Mat temp; resize(img,temp, cv::Size(ROI.width, ROI.height));
+        cv::Mat temp; cv::resize(img, temp, cv::Size(ROI.width, ROI.height), cv::INTER_CUBIC);
         temp.copyTo(DispImage(ROI));
     }
 
